@@ -3,17 +3,36 @@ import json
 import os
 from ratelimiter import RateLimiter
 
-clan_id = 1000067803
+clan_id = 1000067803	#todo: remove hardcoded ID, require user given ID
 ignoreSavedData = False	#currently unused. may impliment if i add ability to resume.
 masterData = {}
 shipsData = {}
 shipsPath = 'ships.json'
 dataPath = 'data.json'
 
+hasGoodClanID = False
+
+'''		#to be completed
+while(not hasGoodClanID):
+	searchString = input("Please input a clanname to search: ")
+		#GET from WG API result from search using searchString
+	#clanSearchURL = ****
+	#clanSearch = requests.get(url = clanSearchURL).json()['data']
+		#ask user if the result's name is of the clan they'd like to use
+	#hasGoodClanID = True if input(f'Found {clan_name} for search of {searchString}. Is this correct? (y/n)).lower ==  'y' else False
+'''
+
+#clan_id = resulting clan ID
+
 ClanMemberIDsURL = f'https://api.worldofwarships.com/wows/clans/info/?application_id=2d227af62868c0359d39302df73da4ce&fields=name%2Cmembers_ids&clan_id={clan_id}'
 
 def importShips():
-	global shipsData
+	global shipsData	
+	#todo: if file doesn't exist, create it then continue
+	try:
+		os.stat(shipsPath).st_size
+	except FileNotFoundError:
+		open(shipsPath, 'w').close()
 	if os.stat(shipsPath).st_size == 0:	#if file is empty, initialize the dict
 		print('ships.json is empty.')
 		shipsData = {'4289640432' : {'name' : 'Omaha', 'tier' : 5, 'type' : 'Cruiser'}}	#initialize json with *something*
@@ -25,19 +44,19 @@ def importShips():
 def isShipInPool(ship_id):
 	global shipsData
 	try:
-		temp = shipsData[str(ship_id)]
+		shipsData[str(ship_id)]
 		return True
 	except KeyError:
 		return False
 
 @RateLimiter(max_calls=10, period=1)
-def GETShipData(ship_id):
+def GETShipData(ship_id): 
 	global shipsData
 	shipLookupURL = f'https://api.worldofwarships.com/wows/encyclopedia/ships/?application_id=2d227af62868c0359d39302df73da4ce&fields=name%2Ctier%2Ctype&ship_id={ship_id}'
 	shipLookupGET = requests.get(url = shipLookupURL)
 	shipLookup = shipLookupGET.json()['data']
 	try:
-		if(shipLookup[str(ship_id)] == {}): return False
+		if(shipLookup[str(ship_id)] == {}): return False		#todo fix blank entries being added for removed ships
 		shipsData[str(ship_id)] = {}
 		shipsData[str(ship_id)]['name'] = shipLookup[str(ship_id)]['name']
 		shipsData[str(ship_id)]['tier'] = shipLookup[str(ship_id)]['tier']
@@ -94,7 +113,7 @@ def saveMasterData():
 
 
 
-importShips();
-main();
+importShips()
+main()
 saveMasterData()
 saveShipsData()
